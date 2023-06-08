@@ -4,7 +4,7 @@
 import re
 import numpy as np
 
-inp_fname = "data/Job-1-C3D20.inp"
+inp_fname = "../data/ABAQUS_NODE_ELEMENT.inp"
 vtk_fname = inp_fname[:-4]+".vtk"
 
 f_inp = open(inp_fname, 'r')
@@ -15,51 +15,67 @@ f_inp.close()
 
 flag_node = False
 # flag_eles_C3D4, flag_eles_C3D8, flag_eles_C3D10, flag_eles_C3D20
-flag_eles = [False, False, False, False]
+
 # flag_ele_C3D8 = False
 # flag_ele_C3D20 = False
 # flag_ele_C3D4 = False
 # flag_ele_C3D10 = False
 nodes = []
 eles = []
-eles = [[],[],[],[]]
+
 eles_C3D20 = []
 
-# cell_types = [CELL_TYPE_C3D4, CELL_TYPE_C3D8, CELL_TYPE_C3D10, CELL_TYPE_C3D20]
+# cell_types = [CELL_TYPE_C3D4, CELL_TYPE_C3D8, CELL_TYPE_C3D10, CELL_TYPE_C3D20,CELL_TYPE_B31,CELL_TYPE_M3D3,CELL_TYPE_S3,CELL_TYPE_M3D4,CELL_TYPE_S4]
 # cell_nodes = [cell_nodes_C3D4, cell_nodes_C3D8, cell_nodes_C3D10, cell_nodes_C3D20]
-cell_types = [10, 12, 24, 25]
-cell_nodes = [4, 8, 10, 20]
+cell_types = [10, 12, 24, 25, 3, 5, 5, 9,  9, 3]
+cell_nodes = [4, 8, 10, 20, 2, 3, 3, 4, 4, 2]
+
+eles = [[] for i in cell_types]
+flag_eles = [False for i in cell_types]
 
 for line in content:
     if line.strip().lower().startswith("*node"):
         flag_node = True
-        flag_eles = [False, False, False, False]
+        flag_eles = [False for i in cell_types]
         continue
     elif line.strip().lower().startswith("*element"):
         flag_node = False
-        flag_eles = [False, False, False, False]
-        if "C3D4" in line:
+        flag_eles = [False for i in cell_types]
+        if "C3D4" in line.upper():
             flag_eles[0] = True
             CELL_TYPE_C3D4 = 10
             cell_nodes_C3D4 = 4
-        elif "C3D8" in line:
+        elif "C3D8" in line.upper():
             flag_eles[1] = True
             CELL_TYPE_C3D8 = 12
             cell_nodes_C3D8 = 8
-        elif "C3D10" in line:
+        elif "C3D10" in line.upper():
             flag_eles[2] = True
             CELL_TYPE_C3D10 = 24
             cell_nodes_C3D10 = 10
-        elif "C3D20" in line:
+        elif "C3D20" in line.upper():
             flag_eles[3] = True
             CELL_TYPE_C3D20 = 25
             cell_nodes_C3D20 = 20
+        elif "B31"  in line.upper():
+            flag_eles[4] = True
+        elif "M3D3" in line.upper():
+            flag_eles[5] = True
+        elif "S3" in line.upper():
+            flag_eles[6] = True    
+        elif "M3D4" in line.upper():
+            flag_eles[7] = True
+        elif "S4" in line.upper():
+            flag_eles[8] = True     
+        elif "T3D2" in line.upper():
+            flag_eles[9] = True                                             
+
         continue
     elif line.strip().lower().startswith("**"):
         continue
     elif line.strip().lower().startswith("*"):
         flag_node = False
-        flag_eles = [False, False, False, False]
+        flag_eles = [False for i in cell_types]
         continue
     if flag_node:
         nodes.append(line.strip())
@@ -71,6 +87,18 @@ for line in content:
         eles[2].append(line.strip())
     elif flag_eles[3]:
         eles[3].append(line.strip())
+    elif flag_eles[4]:
+        eles[4].append(line.strip())
+    elif flag_eles[5]:
+        eles[5].append(line.strip())
+    elif flag_eles[6]:
+        eles[6].append(line.strip())
+    elif flag_eles[7]:
+        eles[7].append(line.strip())
+    elif flag_eles[8]:
+        eles[8].append(line.strip())  
+    elif flag_eles[9]:
+        eles[9].append(line.strip())             
 
 f_vtk.write("# vtk DataFile Version 4.2\n")
 f_vtk.write("Unstructured Grid Example\n")
@@ -123,23 +151,21 @@ CELLS_content = ""
 
 CELL_TYPES_num = 0
 CELL_TYPES_content = ""
-for i in range(4):
+for i in range(len(cell_types)):
     if eles[i]:
         cells_num, cells_total, cells_content, cell_types_num, cell_types_content = write_to_vtk(f_vtk, eles[i], cell_types[i], cell_nodes[i])
         CELLS_num += cells_num
         CELLS_total += cells_total
-        # CELLS_content += cells_content.replace("\n\n", "\n")
-        CELLS_content += cells_content
+        CELLS_content += cells_content.replace("\n\n", "\n")
         CELL_TYPES_num += cell_types_num
-        # CELL_TYPES_content += cell_types_content.replace("\n\n", "\n")
-        CELL_TYPES_content += cell_types_content
+        CELL_TYPES_content += cell_types_content.replace("\n\n", "\n")
 
 f_vtk.write("CELLS {} {}\n".format(CELLS_num, CELLS_total))
 f_vtk.write(CELLS_content)
 f_vtk.write("CELL_TYPES {}\n".format(CELL_TYPES_num))
 f_vtk.write(CELL_TYPES_content)
 
-f_vtk.write("POINT_DATA {}\n".format(len(nodes)))
+# f_vtk.write("POINT_DATA {}\n".format(len(nodes)))
 # f_vtk.write("SCALARS scalars double 1\n")
 # f_vtk.write("LOOKUP_TABLE default\n")
 # for i in range(len(nodes)):
